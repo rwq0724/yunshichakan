@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运神签</title>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background-image: url('新年.png'); /* 初始背景图片 */
+            background-size: cover;
+            background-position: center;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden; /* 确保背景图片覆盖整个屏幕 */
+        }
+        .fortune-container {
+            display: none; /* 初始隐藏 */
+            margin-top: 50px;
+            animation: fadeIn 1s ease-in-out; /* 增加淡入效果 */
+        }
+        .fortune-button {
+            padding: 15px 30px;
+            font-size: 24px;
+            background-color: #FF69B4;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            font-family: 'Indie Flower', cursive;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .fortune-button:hover {
+            background-color: #FF1493;
+            transform: scale(1.1);
+        }
+        .fortune-button:active {
+            animation: bounce 0.3s; /* 增加点击时的动画效果 */
+        }
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.5s ease-in-out; /* 增加淡入效果 */
+        }
+        .modal-content {
+            background-color: transparent; /* 透明背景 */
+            margin: auto;
+            padding: 20px;
+            border: none;
+            width: 80%;
+            max-width: 500px;
+            position: relative;
+            border-radius: 0; /* 初始无圆角 */
+        }
+        .modal-content.birthday {
+            background-color: white; /* 白色背景 */
+            border-radius: 15px; /* 圆角 */
+            animation: slideDown 0.5s ease-in-out; /* 增加下滑效果 */
+        }
+        .close {
+            color: white;
+            position: absolute;
+            top: 10px;
+            right: 25px;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+        }
+        #fortuneImage {
+            max-width: 100%;
+            max-height: 80vh; /* 确保图片在不同设备上显示合适的大小 */
+        }
+        .remaining-draws {
+            margin-top: 20px;
+            font-size: 20px;
+            color: #FF69B4;
+        }
+        .mute-button {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background-color: #FF69B4;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease;
+        }
+        .mute-button:hover {
+            background-color: #FF1493;
+        }
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            font-size: 17px;
+            animation: fadeInOut 3s;
+        }
+        @keyframes fadeIn {
+            from {opacity: 0;}
+            to {opacity: 1;}
+        }
+        @keyframes fadeInOut {
+            0%, 100% {opacity: 0;}
+            10%, 90% {opacity: 1;}
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-30px);}
+            60% {transform: translateY(-15px);}
+        }
+        @keyframes slideDown {
+            from {transform: translateY(-100%);}
+            to {transform: translateY(0);}
+        }
+
+        /* 媒体查询 */
+        @media (max-width: 600px) {
+            .fortune-button {
+                padding: 10px 20px;
+                font-size: 18px;
+            }
+            .remaining-draws {
+                font-size: 16px;
+            }
+            .mute-button {
+                font-size: 14px;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="fortune-container fadeIn">
+        <button class="fortune-button" id="fortuneButton">查看</button>
+        <div class="remaining-draws" id="remainingDraws">您还可以抽取5次</div>
+    </div>
+
+    <!-- Birthday Modal -->
+    <div id="birthdayModal" class="modal">
+        <div class="modal-content birthday"> <!-- 增加 birthday 类 -->
+            <span class="close">&times;</span>
+            <p style="color: black;">检测到梦梦女士今天生日啦，将为您增加100%运势。</p> <!-- 文字颜色改为黑色 -->
+        </div>
+    </div>
+
+    <!-- Fortune Modal -->
+    <div id="fortuneModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img id="fortuneImage" src="" alt="Fortune Image">
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="toast" class="toast">您已没有剩余抽取次数！</div>
+
+    <!-- Hidden Audio Elements -->
+    <audio id="birthdayAudio" src="happy-birthday-155461.mp3" preload="auto"></audio> <!-- 请确保替换为实际的音频文件路径 -->
+    <audio id="confettiAudio" src="confetti.mp3" preload="auto"></audio> <!-- 请确保替换为实际的音频文件路径 -->
+
+    <!-- Confetti Library -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.4.0/dist/confetti.browser.min.js"></script>
+
+    <!-- Mute Button -->
+    <button class="mute-button" id="muteButton">🔊</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const birthdayModal = document.getElementById("birthdayModal");
+            const fortuneModal = document.getElementById("fortuneModal");
+            const fortuneImage = document.getElementById("fortuneImage");
+            const fortuneContainer = document.querySelector('.fortune-container');
+            const spanCloseButtons = document.getElementsByClassName("close");
+            const birthdayAudio = document.getElementById("birthdayAudio");
+            const confettiAudio = document.getElementById("confettiAudio");
+            const remainingDrawsText = document.getElementById("remainingDraws");
+            const toast = document.getElementById("toast");
+            const muteButton = document.getElementById("muteButton");
+
+            let remainingDraws = 5; // 初始剩余抽取次数
+            let isMuted = false; // 初始静音状态
+
+            // Show birthday modal after 3 seconds
+            setTimeout(() => {
+                birthdayModal.style.display = "flex";
+                document.body.style.backgroundImage = "url('生日快乐.png')"; // 切换背景图片
+                fortuneContainer.style.display = "block"; // 显示按钮
+            }, 3000);
+
+            // Close modals when close buttons are clicked
+            Array.from(spanCloseButtons).forEach(span => {
+                span.onclick = function() {
+                    span.closest(".modal").style.display = "none";
+                    if (span.closest(".modal") === birthdayModal && !isMuted) {
+                        birthdayAudio.play(); // 播放音频
+                    }
+                }
+            });
+
+            // Close modals when clicking outside of the modal content
+            window.onclick = function(event) {
+                if (event.target == birthdayModal) {
+                    birthdayModal.style.display = "none";
+                    if (!isMuted) {
+                        birthdayAudio.play(); // 播放音频
+                    }
+                }
+                if (event.target == fortuneModal) {
+                    fortuneModal.style.display = "none";
+                }
+            }
+
+            const fortunes = [
+                "签.jpg",  // 运神签图片文件名
+                "签4.jpg",  // 运神签图片文件名
+                "签1.jpg",  // 运神签图片文件名
+                "签3.jpg",  // 运神签图片文件名
+                "签2.jpg"   // 运神签图片文件名
+            ];
+            let fortuneIndex = 0;
+
+            function launchConfetti() {
+                confetti({
+                    particleCount: 100,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 }
+                });
+                confetti({
+                    particleCount: 100,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 }
+                });
+                if (!isMuted) {
+                    confettiAudio.play(); // 播放彩带音效
+                }
+            }
+
+            function showToast(message) {
+                toast.textContent = message;
+                toast.style.visibility = "visible";
+                setTimeout(() => {
+                    toast.style.visibility = "hidden";
+                }, 3000);
+            }
+
+            // Display fortune modal in fixed order when button is clicked
+            document.getElementById('fortuneButton').addEventListener('click', () => {
+                if (remainingDraws > 0) {
+                    fortuneImage.src = fortunes[fortuneIndex];
+                    fortuneModal.style.display = "flex";
+                    fortuneIndex = (fortuneIndex + 1) % fortunes.length; // 循环显示
+                    remainingDraws--; // 减少一次剩余抽取次数
+                    remainingDrawsText.textContent = `您还可以抽取${remainingDraws}次`; // 更新剩余抽取次数显示
+
+                    if (remainingDraws === 0) {
+                        launchConfetti(); // 最后一次抽取时触发彩带效果
+                    }
+                } else {
+                    showToast("您已没有剩余抽取次数！");
+                }
+            });
+
+            // Toggle mute
+            muteButton.addEventListener('click', () => {
+                isMuted = !isMuted;
+                const audioElements = document.querySelectorAll('audio');
+                audioElements.forEach(audio => {
+                    audio.muted = isMuted;
+                });
+                muteButton.textContent = isMuted ? "🔇" : "🔊";
+            });
+        });
+    </script>
+</body>
+</html>
